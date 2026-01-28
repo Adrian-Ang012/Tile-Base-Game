@@ -10,7 +10,17 @@ public class TileMover : MonoBehaviour
     [Header("Collision")]
     public LayerMask blockingMask;
     public LayerMask slipperyMask;
-    public LayerMask conveyorMask;
+
+    [Header("Conveyor")]
+    public LayerMask conveyorRightMask;
+    public LayerMask conveyorUpMask;
+
+    [Header("Teleport")]
+    public LayerMask teleportAMask;
+    public LayerMask teleportBMask;
+    public Transform spawnA;
+    public Transform spawnB;
+    public float teleportCooldown = 0.25f;
 
     [Header("Animator Params")]
     public string paramMoveX = "moveX";
@@ -20,10 +30,14 @@ public class TileMover : MonoBehaviour
     Animator anim;
 
     bool isMoving;
+    bool autoMoveLock;
+
     Vector2 moveDir;
     Vector3 startPos;
     Vector3 targetPos;
     float t;
+
+    float lastTeleportTime;
 
     void Awake()
     {
@@ -45,7 +59,13 @@ public class TileMover : MonoBehaviour
             return;
         }
 
-        ReadInput();
+        if (!autoMoveLock)
+        {
+            ReadInput();
+            return;
+        }
+
+        CheckSpecialTiles();
     }
 
     void ReadInput()
@@ -65,20 +85,26 @@ public class TileMover : MonoBehaviour
             return;
         }
 
-        TryMove(input);
+        TryMove(input, true);
     }
 
-    void TryMove(Vector2 dir)
+    void TryMove(Vector2 dir, bool fromPlayerInput)
     {
+        if (anim != null)
+        {
+            anim.SetFloat(paramMoveX, dir.x);
+            anim.SetFloat(paramMoveY, dir.y);
+        }
+
         SnapToGrid();
 
         Vector3 nextPos = transform.position + (Vector3)(dir * tileSize);
-
         Vector2 boxSize = new Vector2(tileSize * 0.9f, tileSize * 0.9f);
 
         if (Physics2D.OverlapBox(nextPos, boxSize, 0f, blockingMask) != null)
         {
             if (anim != null) anim.SetBool(paramIsMoving, false);
+            if (fromPlayerInput) autoMoveLock = false;
             return;
         }
 
@@ -88,12 +114,9 @@ public class TileMover : MonoBehaviour
         t = 0f;
         isMoving = true;
 
-        if (anim != null)
-        {
-            anim.SetFloat(paramMoveX, dir.x);
-            anim.SetFloat(paramMoveY, dir.y);
-            anim.SetBool(paramIsMoving, true);
-        }
+        if (fromPlayerInput) autoMoveLock = false;
+
+        if (anim != null) anim.SetBool(paramIsMoving, true);
     }
 
     void MoveLerp()
@@ -102,10 +125,13 @@ public class TileMover : MonoBehaviour
         if (t > 1f) t = 1f;
 
         transform.position = Vector3.Lerp(startPos, targetPos, t);
+        Physics2D.SyncTransforms();
 
         if (t >= 1f)
         {
             transform.position = targetPos;
+            Physics2D.SyncTransforms();
+
             SnapToGrid();
 
             isMoving = false;
@@ -120,16 +146,62 @@ public class TileMover : MonoBehaviour
         Vector2 pos = transform.position;
         Vector2 boxSize = new Vector2(tileSize * 0.9f, tileSize * 0.9f);
 
-        if (Physics2D.OverlapBox(pos, boxSize, 0f, conveyorMask) != null)
+        if (Time.time - lastTeleportTime >= teleportCooldown)
         {
-            TryMove(moveDir);
+            if (Physics2D.OverlapBox(pos, boxSize, 0f, teleportAMask) != null)
+            {
+                TeleportTo(spawnB);
+                return;
+            }
+
+            if (Physics2D.OverlapBox(pos, boxSize, 0f, teleportBMask) != null)
+            {
+                TeleportTo(spawnA);
+                return;
+            }
+        }
+
+        if (Physics2D.OverlapBox(pos, boxSize, 0f, conveyorRightMask) != null)
+        {
+            autoMoveLock = true;
+            TryMove(Vector2.right, false);
+            return;
+        }
+
+        if (Physics2D.OverlapBox(pos, boxSize, 0f, conveyorUpMask) != null)
+        {
+            autoMoveLock = true;
+            TryMove(Vector2.up, false);
             return;
         }
 
         if (Physics2D.OverlapBox(pos, boxSize, 0f, slipperyMask) != null)
         {
-            TryMove(moveDir);
+            autoMoveLock = true;
+            TryMove(moveDir, false);
+            return;
         }
+
+        autoMoveLock = false;
+    }
+
+    void TeleportTo(Transform dest)
+    {
+        if (dest == null)
+        {
+            autoMoveLock = false;
+            return;
+        }
+
+        lastTeleportTime = Time.time;
+        isMoving = false;
+        autoMoveLock = false;
+
+        transform.position = dest.position;
+        Physics2D.SyncTransforms();
+        SnapToGrid();
+
+        if (anim != null) anim.SetBool(paramIsMoving, false);
     }
 
     void SnapToGrid()
@@ -138,6 +210,6 @@ public class TileMover : MonoBehaviour
         float x = Mathf.Floor(p.x / tileSize) * tileSize + (tileSize * 0.5f);
         float y = Mathf.Floor(p.y / tileSize) * tileSize + (tileSize * 0.5f);
         transform.position = new Vector3(x, y, p.z);
+        Physics2D.SyncTransforms();
     }
 }
-

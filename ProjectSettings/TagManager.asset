@@ -14,10 +14,10 @@ TagManager:
   - Blocking
   - AnimatedTiles
   - SlipperyGround
-  - Teleport
-  - 
-  - 
-  - 
+  - TeleportA
+  - ConveyorRight
+  - ConveyorUp
+  - TeleportB
   - 
   - 
   - 

@@ -49,15 +49,18 @@
     <Analyzer Include="C:\Program Files\Unity\Hub\Editor\6000.3.5f1\Editor\Data\Tools\BuildPipeline\Unity.SourceGenerators\Unity.UIToolkit.SourceGenerator.dll" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Assets\TeleportZone.cs" />
     <Compile Include="Assets\TileMover.cs" />
+    <Compile Include="Assets\FreePixelEffect\StateRandom.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Assets\topdown_hospital_Assets\README.txt" />
     <None Include="Assets\BABY\guides\using sword &amp; shield.txt" />
     <None Include="Assets\BABY\guides\using this base.txt" />
+    <None Include="Assets\FreePixelEffect\Additive.shader" />
     <None Include="Assets\BABY\this is only a demo.txt" />
+    <None Include="Assets\FreePixelEffect\ReadMe.txt" />
     <None Include="Assets\BABY\readme.txt" />
+    <None Include="Assets\HandPainted Lava Textures\Documentation\Documentation.txt" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="UnityEngine">
